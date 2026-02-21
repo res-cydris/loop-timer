@@ -46,16 +46,11 @@ workflows:
           echo "=== Staged files ==="
           git status
 
-          # Store credentials via helper so the token is not embedded in the URL
-          git config --global credential.helper store
-          printf "https://res-cydris:%s@github.com\n" "${GITHUB_TOKEN}" \
-            > ~/.git-credentials
-
-          # Ensure the remote points to a plain HTTPS URL
-          git remote set-url origin "https://github.com/res-cydris/loop-timer.git"
-
           git commit -m "Add generated native iOS and Android project files"
-          git push origin HEAD:main
+
+          # Use an inline credential helper to bypass Codemagic's own git auth
+          git -c credential.helper='!f() { echo "username=res-cydris"; echo "password='"${GITHUB_TOKEN}"'"; }; f' \
+            push "https://github.com/res-cydris/loop-timer.git" HEAD:main
           echo "Done - native files committed to repository."
 
   # Regular iOS build - run this after setup-native-files has run once.
