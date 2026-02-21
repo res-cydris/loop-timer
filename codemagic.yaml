@@ -1,17 +1,14 @@
 workflows:
 
-  # Run this workflow ONCE first to generate native iOS/Android files
-  # and commit them to the repo.
-  # Prerequisite: add GITHUB_TOKEN (repo-scoped PAT) in
-  # Codemagic > your app > Environment variables.
+  # Run this workflow ONCE to generate native iOS/Android files.
+  # After it completes, download the artifact zip from the build page,
+  # extract it into your project folder, then commit and push from your machine.
   setup-native-files:
     name: "SETUP (run once) - Generate native project files"
     max_build_duration: 20
 
     environment:
       flutter: stable
-      groups:
-        - secrets
 
     scripts:
       - name: Generate iOS and Android native project structure
@@ -21,10 +18,6 @@ workflows:
             --org com.rescydris \
             --project-name loop_timer \
             .
-          echo "=== iOS ==="
-          ls ios/
-          echo "=== Android ==="
-          ls android/
 
       - name: Add background audio to Info.plist
         script: |
@@ -35,22 +28,15 @@ workflows:
           /usr/libexec/PlistBuddy \
             -c "Add :UIBackgroundModes:0 string audio" \
             ios/Runner/Info.plist
-          echo "UIBackgroundModes:audio added"
 
-      - name: Commit and push native files to repository
+      - name: Package native files as artifact
         script: |
           set -e
-          git config user.email "jonahwilliams95@gmail.com"
-          git config user.name "Jonah Williams"
-          git add ios/ android/
-          echo "=== Staged files ==="
-          git status
+          zip -r /tmp/native_files.zip ios/ android/
+          echo "Artifact ready - download native_files.zip from the build page."
 
-          git commit -m "Add generated native iOS and Android project files"
-
-          # Use an inline credential helper to bypass Codemagic's own git auth
-          git -c credential.helper='!f() { echo "username=res-cydris"; echo "password='"${GITHUB_TOKEN}"'"; }; f' \
-            push "https://github.com/res-cydris/loop-timer.git" HEAD:main
+    artifacts:
+      - /tmp/native_files.zip
           echo "Done - native files committed to repository."
 
   # Regular iOS build - run this after setup-native-files has run once.
