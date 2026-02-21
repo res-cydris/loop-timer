@@ -1,0 +1,148 @@
+workflows:
+
+  # ─────────────────────────────────────────────────────────────────
+  # iOS — Ad Hoc build (installs directly on registered devices)
+  # Requires: Apple Developer account + device UDID registered
+  # ─────────────────────────────────────────────────────────────────
+  ios-adhoc:
+    name: "Loop Timer · iOS Ad Hoc"
+    max_build_duration: 60
+
+    environment:
+      ios_signing:
+        distribution_type: ad_hoc        # direct install on registered devices
+        bundle_identifier: com.rescydris.looptimer
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+      # Step 1 — Generate the native iOS/Android project scaffolding.
+      # flutter create in an existing directory only creates missing files;
+      # it does NOT overwrite lib/, pubspec.yaml, or our custom Info.plist.
+      - name: Generate native project scaffolding
+        script: |
+          flutter create \
+            --org com.rescydris \
+            --project-name loop_timer \
+            --platforms ios,android \
+            .
+
+      # Step 2 — Install Dart/Flutter dependencies
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      # Step 3 — Install CocoaPods (Flutter iOS plugins)
+      - name: Install CocoaPods dependencies
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+
+      # Step 4 — Build the signed IPA
+      - name: Build iOS IPA
+        script: |
+          flutter build ipa \
+            --release \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log        # useful if the build fails
+
+    publishing:
+      email:
+        recipients:
+          - jonahwilliams95@gmail.com
+        notify:
+          success: true    # email contains install link
+          failure: true    # email contains build log link
+
+  # ─────────────────────────────────────────────────────────────────
+  # iOS — App Store / TestFlight build
+  # Requires: paid Apple Developer account ($99/yr)
+  # ─────────────────────────────────────────────────────────────────
+  ios-testflight:
+    name: "Loop Timer · iOS TestFlight"
+    max_build_duration: 60
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.rescydris.looptimer
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+      - name: Generate native project scaffolding
+        script: |
+          flutter create \
+            --org com.rescydris \
+            --project-name loop_timer \
+            --platforms ios,android \
+            .
+
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Install CocoaPods dependencies
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+
+      - name: Build iOS IPA (App Store)
+        script: |
+          flutter build ipa \
+            --release \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+    publishing:
+      app_store_connect:
+        auth: integration           # uses App Store Connect API key set in Codemagic
+        submit_to_testflight: true
+        beta_groups:
+          - "Internal Testers"
+      email:
+        recipients:
+          - jonahwilliams95@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  # ─────────────────────────────────────────────────────────────────
+  # Android — APK (sideload) build, for reference
+  # ─────────────────────────────────────────────────────────────────
+  android-apk:
+    name: "Loop Timer · Android APK"
+    max_build_duration: 45
+
+    environment:
+      flutter: stable
+
+    scripts:
+      - name: Generate native project scaffolding
+        script: |
+          flutter create \
+            --org com.rescydris \
+            --project-name loop_timer \
+            --platforms ios,android \
+            .
+
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Build APK
+        script: |
+          flutter build apk --release
+
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+
+    publishing:
+      email:
+        recipients:
+          - jonahwilliams95@gmail.com
+        notify:
+          success: true
+          failure: true

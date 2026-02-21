@@ -1,0 +1,48 @@
+# Dart / Flutter generated files
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+
+# Build outputs
+build/
+
+# Android generated files (keep our AndroidManifest.xml)
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/**/GeneratedPluginRegistrant.java
+android/**/GeneratedPluginRegistrant.kt
+**/android/key.properties
+*.jks
+
+# iOS generated files (keep our Info.plist)
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Generated.xcconfig
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# macOS
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+
+# Coverage / test output
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Misc
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
