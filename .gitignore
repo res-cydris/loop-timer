@@ -1,4 +1,4 @@
-# Dart / Flutter generated files
+# Dart / Flutter
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -9,21 +9,27 @@
 # Build outputs
 build/
 
-# Native platform directories — generated fresh by `flutter create` in CI.
-# Do not commit these; codemagic.yaml recreates them before every build.
-ios/
-android/
+# iOS — track the Xcode project, ignore generated artifacts
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
 
-# CocoaPods
-Pods/
-*.xcworkspace
+# Android — track the Gradle project, ignore local/generated files
+android/.gradle/
+android/local.properties
+android/captures/
+android/**/GeneratedPluginRegistrant.java
+android/**/GeneratedPluginRegistrant.kt
+android/key.properties
+*.jks
 
 # macOS
 macos/Flutter/GeneratedPluginRegistrant.swift
 macos/Flutter/ephemeral/
-
-# Coverage / test output
-coverage/
 
 # IDE
 .idea/

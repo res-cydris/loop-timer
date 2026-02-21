@@ -1,14 +1,13 @@
 workflows:
 
   # ═══════════════════════════════════════════════════════════════════
-  # STEP 1 — Run this workflow ONCE to generate the native Xcode and
-  # Gradle project files and commit them back to your repository.
+  # STEP 1 — Run this workflow ONCE to generate the native Xcode/Gradle
+  # files and commit them back to the repository.
   #
-  # Before running:
-  #   Codemagic dashboard → your app → Environment variables → Add:
+  # Before running, add this environment variable in Codemagic:
+  #   Codemagic → your app → Environment variables → Add variable:
   #     Name:  GITHUB_TOKEN
-  #     Value: <a GitHub PAT with 'repo' scope>
-  #     Group: (leave blank)
+  #     Value: a GitHub PAT with 'repo' scope
   #     ✓ Secure
   # ═══════════════════════════════════════════════════════════════════
   setup-native-files:
@@ -18,24 +17,22 @@ workflows:
     environment:
       flutter: stable
       vars:
-        GITHUB_TOKEN: $GITHUB_TOKEN   # set this in Codemagic env vars
+        GITHUB_TOKEN: $GITHUB_TOKEN
 
     scripts:
       - name: Generate iOS and Android native project structure
         script: |
           set -e
-
           flutter create \
             --org com.rescydris \
             --project-name loop_timer \
             .
-
-          echo "--- iOS ---"
+          echo "=== iOS files ==="
           ls ios/
-          echo "--- Android ---"
+          echo "=== Android files ==="
           ls android/
 
-      - name: Add background audio to Info.plist (required by audioplayers)
+      - name: Add background audio to Info.plist
         script: |
           set -e
           /usr/libexec/PlistBuddy \
@@ -44,42 +41,15 @@ workflows:
           /usr/libexec/PlistBuddy \
             -c "Add :UIBackgroundModes:0 string audio" \
             ios/Runner/Info.plist
-          echo "UIBackgroundModes patched"
+          echo "UIBackgroundModes:audio added"
 
-      - name: Update .gitignore so native dirs are tracked
-        script: |
-          # Remove the blanket ios/ and android/ ignore lines added earlier
-          sed -i '/^ios\/$/d'          .gitignore
-          sed -i '/^android\/$/d'     .gitignore
-          sed -i '/^# Native platform/d' .gitignore
-          sed -i '/^# Do not commit these/d' .gitignore
-
-          # Add back fine-grained ignores for generated artifacts only
-          cat >> .gitignore << 'GITIGNORE'
-
-# iOS — track Xcode project, ignore build artifacts
-ios/Pods/
-ios/.symlinks/
-ios/Flutter/Generated.xcconfig
-ios/Flutter/flutter_export_environment.sh
-ios/Flutter/App.framework
-ios/Flutter/Flutter.framework
-ios/Flutter/Flutter.podspec
-
-# Android — track Gradle project, ignore local build files
-android/.gradle/
-android/local.properties
-android/captures/
-android/**/GeneratedPluginRegistrant.java
-android/**/GeneratedPluginRegistrant.kt
-GITIGNORE
-
-      - name: Commit and push native files to repository
+      - name: Commit and push to repository
         script: |
           set -e
           git config user.email "jonahwilliams95@gmail.com"
           git config user.name "Jonah Williams"
-          git add ios/ android/ .gitignore
+          git add ios/ android/
+          echo "=== Files staged ==="
           git status
           git commit -m "Add generated native iOS and Android project files"
           git push \
@@ -88,8 +58,7 @@ GITIGNORE
           echo "Done — native files are now in the repository."
 
   # ═══════════════════════════════════════════════════════════════════
-  # STEP 2 — Run this after setup-native-files has been run once.
-  # This is the regular iOS build you'll use from now on.
+  # STEP 2 — Run after setup-native-files has completed once.
   # ═══════════════════════════════════════════════════════════════════
   ios-adhoc:
     name: "Loop Timer · iOS Ad Hoc"
@@ -155,7 +124,7 @@ GITIGNORE
       - name: Install CocoaPods dependencies
         script: cd ios && pod install
 
-      - name: Build iOS IPA (App Store)
+      - name: Build iOS IPA
         script: |
           flutter build ipa \
             --release \
