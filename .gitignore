@@ -9,25 +9,14 @@
 # Build outputs
 build/
 
-# Android generated files (keep our AndroidManifest.xml)
-android/.gradle/
-android/captures/
-android/gradlew
-android/gradlew.bat
-android/local.properties
-android/**/GeneratedPluginRegistrant.java
-android/**/GeneratedPluginRegistrant.kt
-**/android/key.properties
-*.jks
+# Native platform directories — generated fresh by `flutter create` in CI.
+# Do not commit these; codemagic.yaml recreates them before every build.
+ios/
+android/
 
-# iOS generated files (keep our Info.plist)
-ios/Pods/
-ios/.symlinks/
-ios/Flutter/flutter_export_environment.sh
-ios/Flutter/Generated.xcconfig
-ios/Flutter/App.framework
-ios/Flutter/Flutter.framework
-ios/Flutter/Flutter.podspec
+# CocoaPods
+Pods/
+*.xcworkspace
 
 # macOS
 macos/Flutter/GeneratedPluginRegistrant.swift

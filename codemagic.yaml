@@ -2,7 +2,6 @@ workflows:
 
   # ─────────────────────────────────────────────────────────────────
   # iOS — Ad Hoc build (installs directly on registered devices)
-  # Requires: Apple Developer account + device UDID registered
   # ─────────────────────────────────────────────────────────────────
   ios-adhoc:
     name: "Loop Timer · iOS Ad Hoc"
@@ -10,55 +9,80 @@ workflows:
 
     environment:
       ios_signing:
-        distribution_type: ad_hoc        # direct install on registered devices
+        distribution_type: ad_hoc
         bundle_identifier: com.rescydris.looptimer
       flutter: stable
       xcode: latest
       cocoapods: default
 
     scripts:
-      # Step 1 — Generate the native iOS/Android project scaffolding.
-      # flutter create in an existing directory only creates missing files;
-      # it does NOT overwrite lib/, pubspec.yaml, or our custom Info.plist.
+      # Step 1 — Generate the complete native iOS + Android project structure.
+      # The repo only contains lib/ and pubspec.yaml; native dirs are built here.
       - name: Generate native project scaffolding
         script: |
+          set -e
+
+          # Remove any partial native stubs so flutter create owns these dirs fully
+          rm -rf ios android
+
+          # Generate complete Xcode + Gradle project (does not touch lib/ or pubspec.yaml)
           flutter create \
             --org com.rescydris \
             --project-name loop_timer \
-            --platforms ios,android \
             .
+
+          # Verify the Xcode project was created
+          echo "✓ iOS project files:"
+          ls ios/Runner.xcodeproj/
+
+          # Add background audio capability (required by audioplayers package)
+          /usr/libexec/PlistBuddy \
+            -c "Add :UIBackgroundModes array" \
+            ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy \
+            -c "Add :UIBackgroundModes:0 string audio" \
+            ios/Runner/Info.plist
+          echo "✓ UIBackgroundModes:audio added to Info.plist"
+
+          # Add audioplayers permissions to Android manifest
+          sed -i 's|</manifest>|    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-permission android:name="android.permission.VIBRATE" />\n</manifest>|' \
+            android/app/src/main/AndroidManifest.xml
+          echo "✓ Android permissions patched"
 
       # Step 2 — Install Dart/Flutter dependencies
       - name: Get Flutter packages
-        script: flutter pub get
+        script: |
+          set -e
+          flutter pub get
 
-      # Step 3 — Install CocoaPods (Flutter iOS plugins)
+      # Step 3 — Install CocoaPods
       - name: Install CocoaPods dependencies
         script: |
+          set -e
           find . -name "Podfile" -execdir pod install \;
 
       # Step 4 — Build the signed IPA
       - name: Build iOS IPA
         script: |
+          set -e
           flutter build ipa \
             --release \
             --export-options-plist=/Users/builder/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log        # useful if the build fails
+      - /tmp/xcodebuild_logs/*.log
 
     publishing:
       email:
         recipients:
           - jonahwilliams95@gmail.com
         notify:
-          success: true    # email contains install link
-          failure: true    # email contains build log link
+          success: true
+          failure: true
 
   # ─────────────────────────────────────────────────────────────────
-  # iOS — App Store / TestFlight build
-  # Requires: paid Apple Developer account ($99/yr)
+  # iOS — TestFlight (requires paid Apple Developer account $99/yr)
   # ─────────────────────────────────────────────────────────────────
   ios-testflight:
     name: "Loop Timer · iOS TestFlight"
@@ -75,18 +99,17 @@ workflows:
     scripts:
       - name: Generate native project scaffolding
         script: |
-          flutter create \
-            --org com.rescydris \
-            --project-name loop_timer \
-            --platforms ios,android \
-            .
+          set -e
+          rm -rf ios android
+          flutter create --org com.rescydris --project-name loop_timer .
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" ios/Runner/Info.plist
 
       - name: Get Flutter packages
         script: flutter pub get
 
       - name: Install CocoaPods dependencies
-        script: |
-          find . -name "Podfile" -execdir pod install \;
+        script: find . -name "Podfile" -execdir pod install \;
 
       - name: Build iOS IPA (App Store)
         script: |
@@ -99,10 +122,8 @@ workflows:
 
     publishing:
       app_store_connect:
-        auth: integration           # uses App Store Connect API key set in Codemagic
+        auth: integration
         submit_to_testflight: true
-        beta_groups:
-          - "Internal Testers"
       email:
         recipients:
           - jonahwilliams95@gmail.com
@@ -111,7 +132,7 @@ workflows:
           failure: true
 
   # ─────────────────────────────────────────────────────────────────
-  # Android — APK (sideload) build, for reference
+  # Android — APK sideload build
   # ─────────────────────────────────────────────────────────────────
   android-apk:
     name: "Loop Timer · Android APK"
@@ -123,18 +144,15 @@ workflows:
     scripts:
       - name: Generate native project scaffolding
         script: |
-          flutter create \
-            --org com.rescydris \
-            --project-name loop_timer \
-            --platforms ios,android \
-            .
+          set -e
+          rm -rf ios android
+          flutter create --org com.rescydris --project-name loop_timer .
 
       - name: Get Flutter packages
         script: flutter pub get
 
       - name: Build APK
-        script: |
-          flutter build apk --release
+        script: flutter build apk --release
 
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
