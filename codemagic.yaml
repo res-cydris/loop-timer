@@ -10,6 +10,8 @@ workflows:
 
     environment:
       flutter: stable
+      groups:
+        - secrets
 
     scripts:
       - name: Generate iOS and Android native project structure
