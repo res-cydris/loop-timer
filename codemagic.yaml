@@ -1,23 +1,15 @@
 workflows:
 
-  # ═══════════════════════════════════════════════════════════════════
-  # STEP 1 — Run this workflow ONCE to generate the native Xcode/Gradle
-  # files and commit them back to the repository.
-  #
-  # Before running, add this environment variable in Codemagic:
-  #   Codemagic → your app → Environment variables → Add variable:
-  #     Name:  GITHUB_TOKEN
-  #     Value: a GitHub PAT with 'repo' scope
-  #     ✓ Secure
-  # ═══════════════════════════════════════════════════════════════════
+  # Run this workflow ONCE first to generate native iOS/Android files
+  # and commit them to the repo.
+  # Prerequisite: add GITHUB_TOKEN (repo-scoped PAT) in
+  # Codemagic > your app > Environment variables.
   setup-native-files:
-    name: "SETUP (run once) — Generate native project files"
+    name: "SETUP (run once) - Generate native project files"
     max_build_duration: 20
 
     environment:
       flutter: stable
-      vars:
-        GITHUB_TOKEN: $GITHUB_TOKEN
 
     scripts:
       - name: Generate iOS and Android native project structure
@@ -27,9 +19,9 @@ workflows:
             --org com.rescydris \
             --project-name loop_timer \
             .
-          echo "=== iOS files ==="
+          echo "=== iOS ==="
           ls ios/
-          echo "=== Android files ==="
+          echo "=== Android ==="
           ls android/
 
       - name: Add background audio to Info.plist
@@ -43,25 +35,23 @@ workflows:
             ios/Runner/Info.plist
           echo "UIBackgroundModes:audio added"
 
-      - name: Commit and push to repository
+      - name: Commit and push native files to repository
         script: |
           set -e
           git config user.email "jonahwilliams95@gmail.com"
           git config user.name "Jonah Williams"
           git add ios/ android/
-          echo "=== Files staged ==="
+          echo "=== Staged files ==="
           git status
           git commit -m "Add generated native iOS and Android project files"
           git push \
             "https://res-cydris:${GITHUB_TOKEN}@github.com/res-cydris/loop-timer.git" \
             HEAD:main
-          echo "Done — native files are now in the repository."
+          echo "Done - native files committed to repository."
 
-  # ═══════════════════════════════════════════════════════════════════
-  # STEP 2 — Run after setup-native-files has completed once.
-  # ═══════════════════════════════════════════════════════════════════
+  # Regular iOS build - run this after setup-native-files has run once.
   ios-adhoc:
-    name: "Loop Timer · iOS Ad Hoc"
+    name: "Loop Timer - iOS Ad Hoc"
     max_build_duration: 60
 
     environment:
@@ -95,48 +85,6 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
 
     publishing:
-      email:
-        recipients:
-          - jonahwilliams95@gmail.com
-        notify:
-          success: true
-          failure: true
-
-  # ═══════════════════════════════════════════════════════════════════
-  # iOS — TestFlight (requires paid Apple Developer account $99/yr)
-  # ═══════════════════════════════════════════════════════════════════
-  ios-testflight:
-    name: "Loop Timer · iOS TestFlight"
-    max_build_duration: 60
-
-    environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.rescydris.looptimer
-      flutter: stable
-      xcode: latest
-      cocoapods: default
-
-    scripts:
-      - name: Get Flutter packages
-        script: flutter pub get
-
-      - name: Install CocoaPods dependencies
-        script: cd ios && pod install
-
-      - name: Build iOS IPA
-        script: |
-          flutter build ipa \
-            --release \
-            --export-options-plist=/Users/builder/export_options.plist
-
-    artifacts:
-      - build/ios/ipa/*.ipa
-
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
       email:
         recipients:
           - jonahwilliams95@gmail.com
